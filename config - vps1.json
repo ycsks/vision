@@ -1,0 +1,97 @@
+{
+    "log": {
+        "loglevel": "warning"
+    },
+    "inbounds": [
+        {
+            "port": 443, //端口
+            "protocol": "vless", //协议类型
+            "settings": {
+                "clients": [
+                    {
+                        "id": "uuid", //替换为你的uuid
+                        "flow": "xtls-rprx-vision" //流控
+                    }
+                ],
+                "decryption": "none",
+                "fallbacks": [
+                    {
+                        "alpn": "h2",
+                        "dest": 81, 
+                        "xver": 1
+                    },
+                    {
+                        "dest": 82, 
+                        "xver": 1 
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "tls",
+                "tlsSettings": {
+                    "rejectUnknownSni": true, //服务端接收到的 SNI 与证书域名不匹配即拒绝 TLS 握手
+                    "fingerprint": "chrome", //TLS指纹伪装，伪装为chrome浏览器指纹
+                    "allowInsecure": false, //不允许不安全连接（仅用于客户端）
+                    "alpn": [
+                        "http/1.1","h2"
+                    ],
+                    "certificates": [
+                        {
+                            "certificateFile": "/etc/ssl/private/cert.crt", //证书位置，绝对路径
+                            "keyFile": "/etc/ssl/private/private.key" //私钥位置，绝对路径
+                        }
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        }
+    ], 
+    "outbounds": [
+        {
+            "protocol": "vmess", // 出口协议
+            "settings": {
+                "vnext": [
+                    {
+                        "address": "ip", // 国外服务器地址
+                        "port": 10010, // 国外服务器端口
+                        "users": [
+                            {
+                                "id": "uuid" // 用户 UUID，须与国外服务器端配置相同
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "protocol": "blackhole",
+            "settings": {},
+            "tag": "block"
+        },
+        {
+            "protocol": "freedom",
+            "tag": "direct",
+            "settings": {}
+        }
+    ],
+    "routing": {
+        "domainStrategy": "IPIfNonMatch",
+        "rules": [
+            {
+                "type": "field",
+                "ip": [
+                    "geoip:cn",
+                    "geoip:private"
+                ],
+                "outboundTag": "block"
+            }
+        ]
+    }
+}
